@@ -1,0 +1,3 @@
+[submodule "deps/QuickQanava"]
+	path = deps/QuickQanava
+	url = https://github.com/cneben/QuickQanava
