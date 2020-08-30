@@ -24,7 +24,10 @@ RESOURCES += qml.qrc
 TRANSLATIONS += \
     Pulsar_en_US.ts
 
-LIBS += -ldl -lpulse
+LIBS += -ldl
+
+CONFIG += link_pkgconfig
+PKGCONFIG += glib-2.0 libpulse libpulse-mainloop-glib
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

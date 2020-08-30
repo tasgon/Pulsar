@@ -1,21 +1,32 @@
 #include "pulseconnector.h"
 
 #include <iostream>
+#include <glib.h>
 
-bool connected = false;
+void sink_input_update(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data) {
+    PulseConnector* conn = (PulseConnector*) data;
+    if (info != NULL) {
+        //conn->sink_map.insert_or_assign(std::make_pair(info->index, ))
+    }
+}
 
-void print_list(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data) {
-    //printf("%d connections\n", idx);
-    if (info != NULL)
-        std::cout << info->index << " " << info->name << std::endl;
+void sink_update(pa_context *ctx, const pa_sink_info *info, int idx, void *data) {
+
 }
 
 void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int index, void *data) {
     std::cout << "Event received with " << index << " -- ";
+    PulseConnector* conn = (PulseConnector*)data;
     switch (type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) {
     case PA_SUBSCRIPTION_EVENT_SINK:
         std::cout << "sink event" << std::endl;
-        if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
+        if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE) {
+            conn->sink_map.erase(index);
+        } else {
+            //auto ret = pa_context_get_sink_input_info(ctx, index, &sink_input_update, data);
+            auto ret = pa_context_get_sink_info_by_index(ctx, index, &sink_update, data);
+            pa_operation_unref(ret);
+        }
         break;
     case PA_SUBSCRIPTION_EVENT_SOURCE:
         std::cout << "source event" << std::endl;
@@ -45,7 +56,7 @@ void on_connect(pa_context *ctx, void *data) {
             std::cerr << "Unable to subscribe to pulse events" << std::endl;
             return;
         }
-        ret = pa_context_get_sink_input_info_list(ctx, &print_list, data);
+        ret = pa_context_get_sink_input_info_list(ctx, &sink_input_update, data);
         pa_operation_unref(ret);
         break;
     }
@@ -62,18 +73,16 @@ PulseConnector::PulseConnector()
 {
     std::cout << "Creating connector" << std::endl;
     void *data = this;
-    this->loop = pa_threaded_mainloop_new();
-    this->api = pa_threaded_mainloop_get_api(this->loop);
+    this->loop = pa_glib_mainloop_new(g_main_context_default());
+    this->api = pa_glib_mainloop_get_api(this->loop);
     this->ctx = pa_context_new(this->api, "Pulsar");
     pa_context_connect(this->ctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
     pa_context_set_state_callback(this->ctx, &on_connect, data);
-    pa_threaded_mainloop_start(this->loop);
     return;
 }
 
 PulseConnector::~PulseConnector()
 {
     pa_context_disconnect(this->ctx);
-    pa_threaded_mainloop_stop(this->loop);
-    pa_threaded_mainloop_free(this->loop);
+    pa_glib_mainloop_free(this->loop);
 }

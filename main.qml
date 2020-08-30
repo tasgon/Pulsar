@@ -11,7 +11,9 @@ Window {
 
     Qan.Graph {
         id: graph
+        property var test: function (i) { console.log(i) }
         Component.onCompleted: {
+            graph.test("wassup")
             var n3 = graph.insertNode()
             n3.label = "N3"; n3.item.x = 500; n3.item.y = 100
             var n3p1 = graph.insertInPort(n3, Qan.NodeItem.Left);
