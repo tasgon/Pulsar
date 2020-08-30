@@ -2,25 +2,32 @@
 
 #include <iostream>
 #include <glib.h>
+#include <cstdlib>
 
-void sink_input_update(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data) {
+void sink_input_update(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data)
+{
     PulseConnector* conn = (PulseConnector*) data;
-    if (info != NULL) {
-        //conn->sink_map.insert_or_assign(std::make_pair(info->index, ))
+    if (info != NULL)
+    {
+        emit conn->updateSinkInput(QString(info->name), info->index, rand() % 100, rand() % 100);
     }
 }
 
-void sink_update(pa_context *ctx, const pa_sink_info *info, int idx, void *data) {
+void sink_update(pa_context *ctx, const pa_sink_info *info, int idx, void *data)
+{
 
 }
 
-void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int index, void *data) {
+void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int index, void *data)
+{
     std::cout << "Event received with " << index << " -- ";
     PulseConnector* conn = (PulseConnector*)data;
-    switch (type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) {
+    switch (type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK)
+    {
     case PA_SUBSCRIPTION_EVENT_SINK:
         std::cout << "sink event" << std::endl;
-        if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE) {
+        if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
+        {
             conn->sink_map.erase(index);
         } else {
             //auto ret = pa_context_get_sink_input_info(ctx, index, &sink_input_update, data);
@@ -37,7 +44,8 @@ void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int i
     }
 }
 
-void on_connect(pa_context *ctx, void *data) {
+void on_connect(pa_context *ctx, void *data)
+{
     printf("In callback\n");
     pa_context_state_t state = pa_context_get_state(ctx);
     pa_operation *ret;
@@ -69,16 +77,20 @@ void on_connect(pa_context *ctx, void *data) {
     }
 }
 
-PulseConnector::PulseConnector()
+PulseConnector::PulseConnector(QObject *parent) : QObject(parent)
 {
     std::cout << "Creating connector" << std::endl;
+    return;
+}
+
+Q_INVOKABLE void PulseConnector::init()
+{
     void *data = this;
     this->loop = pa_glib_mainloop_new(g_main_context_default());
     this->api = pa_glib_mainloop_get_api(this->loop);
     this->ctx = pa_context_new(this->api, "Pulsar");
     pa_context_connect(this->ctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
     pa_context_set_state_callback(this->ctx, &on_connect, data);
-    return;
 }
 
 PulseConnector::~PulseConnector()
