@@ -4,12 +4,12 @@ import QuickQanava 2.0 as Qan
 import "qrc:/QuickQanava" as Qan
 
 Qan.NodeItem {
-    id: sinkInputNode
-    readonly property string nodeType: "sink"
-    property string sinkInputName: "<UNKNOWN>"
+    id: sinkNode
+    readonly property string nodeType: "sinkInput"
+    property string sinkName: "<UNKNOWN>"
     property int index: 0
     function set(name, idx) {
-        sinkInputName = name;
+        sinkName = name;
         index = idx;
     }
 
@@ -20,12 +20,12 @@ Qan.NodeItem {
         Rectangle {
             id: background
             anchors.fill: parent
-            color: "lightblue"
+            color: "lightgreen"
             border.color: "black"
             border.width: 2
             Label {
                 anchors.fill: parent
-                text: sinkInputNode.sinkInputName
+                text: sinkNode.sinkName
             }
         }
     }

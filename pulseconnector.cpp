@@ -3,19 +3,30 @@
 #include <iostream>
 #include <glib.h>
 #include <cstdlib>
+#include <QJsonObject>
 
-void sink_input_update(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data)
+bool check_event(pa_proplist *proplist)
 {
-    PulseConnector* conn = (PulseConnector*) data;
-    if (info != NULL)
-    {
-        emit conn->updateSinkInput(QString(info->name), info->index, rand() % 100, rand() % 100);
-    }
+    const char *t = pa_proplist_gets(proplist, "module-stream-restore.id");
+    return (t && strcmp(t, "sink-input-by-media-role:event") == 0);
 }
 
 void sink_update(pa_context *ctx, const pa_sink_info *info, int idx, void *data)
 {
+    PulseConnector *conn = (PulseConnector *) data;
+    if (info != NULL)
+    {
+        emit conn->updateSink(QString(info->name), info->index);
+    }
+}
 
+void sink_input_update(pa_context *ctx, const pa_sink_input_info *info, int idx, void *data)
+{
+    PulseConnector* conn = (PulseConnector *) data;
+    if (info != NULL && !check_event(info->proplist))
+    {
+        emit conn->updateSinkInput(QString(info->name), info->index);
+    }
 }
 
 void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int index, void *data)
@@ -28,10 +39,19 @@ void on_event(pa_context *ctx, pa_subscription_event_type_t type, unsigned int i
         std::cout << "sink event" << std::endl;
         if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
         {
-            conn->sink_map.erase(index);
+            emit conn->removeSink(index);
         } else {
-            //auto ret = pa_context_get_sink_input_info(ctx, index, &sink_input_update, data);
             auto ret = pa_context_get_sink_info_by_index(ctx, index, &sink_update, data);
+            pa_operation_unref(ret);
+        }
+        break;
+    case PA_SUBSCRIPTION_EVENT_SINK_INPUT:
+        std::cout << "sink input event" << std::endl;
+        if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
+        {
+            emit conn->removeSinkInput(index);
+        } else {
+            auto ret = pa_context_get_sink_input_info(ctx, index, &sink_input_update, data);
             pa_operation_unref(ret);
         }
         break;
@@ -65,6 +85,8 @@ void on_connect(pa_context *ctx, void *data)
             return;
         }
         ret = pa_context_get_sink_input_info_list(ctx, &sink_input_update, data);
+        pa_operation_unref(ret);
+        ret = pa_context_get_sink_info_list(ctx, &sink_update, data);
         pa_operation_unref(ret);
         break;
     }

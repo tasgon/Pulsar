@@ -21,15 +21,18 @@ private:
     pa_context *ctx;
     pa_mainloop_api *api;
     pa_glib_mainloop *loop;
+    std::map<unsigned int, QObject *> sinkMap;
+    std::map<unsigned int, QObject *> sinkInputMap;
 public:
     explicit PulseConnector(QObject *parent = nullptr);
     ~PulseConnector();
     Q_INVOKABLE void init();
-    map<int, pa_sink_input_info> sink_map;
+    //Q_INVOKABLE void registerSink(unsigned int index, QObject *sink) {  }
 signals:
-    void updateSinkInput(QString name, unsigned int index, int x, int y);
-//public slots:
-//    void moveInput(unsigned int index, unsigned int sink_idx) { pa_context_move_sink_input_by_index(this->ctx, index, sink_idx, &on_success, NULL); }
+    void updateSink(QString name, unsigned int index);
+    void removeSink(unsigned int index);
+    void updateSinkInput(QString name, unsigned int index);
+    void removeSinkInput(unsigned int index);
 };
 
 #endif // PULSECONNECTOR_H
